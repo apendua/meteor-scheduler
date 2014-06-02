@@ -1,0 +1,9 @@
+{
+  "jslint.options": {
+    "predef": [
+      "Meteor",
+      "Package",
+      "Scheduler"
+    ]
+  }
+}

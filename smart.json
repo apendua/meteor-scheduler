@@ -1,0 +1,9 @@
+{
+  "name": "scheduler",
+  "description": "A minimalistic scheduling tool.",
+  "homepage": "https://github.com/apendua/meteor-scheduler",
+  "author": "Tomasz Lenarcik",
+  "version": "0.0.1",
+  "git": "https://github.com/apendua/meteor-scheduler.git",
+  "packages": {}
+}
