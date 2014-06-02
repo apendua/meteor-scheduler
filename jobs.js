@@ -28,33 +28,49 @@
       var match = Config.jobsRegExp.exec(req.url);
       var name = "";
       
+      function end(code, data) {
+        res.statusCode = code;
+        if (_.isObject(data)) {
+          res.setHeader("Content-Type", "application/json; character=utf-8");
+          res.end(JSON.stringify(data));
+        }
+        res.end();
+      }
+      
       if (!match) {
         next();
       } else {
         // TODO: use bindEnvironment instead
         name = match[1];
-        Fiber(function () {
-          var json = {};
-          try {
-            if (!_.isFunction(Config.jobsByName[name] === undefined)) {
-              throw new Meteor.Error(404, 'Job not found.');
+        
+        if (name === undefined) {
+          
+          end(200, _.map(_.keys(Config.jobsByName), function (name) {
+            return Meteor.absoluteUrl(Config.options.jobsPrefix + '/' + name);
+          }));
+          
+        } else {
+      
+          Fiber(function () {
+            var json = null;
+            try {
+              if (!_.isFunction(Config.jobsByName[name] === undefined)) {
+                throw new Meteor.Error(404, 'Job not found.');
+              }
+              json = Config.jobsByName[name](req, res);
+              if (json) {
+                // if not, we assume that the callback will process the response manually
+                end(200, json);
+              }
+            } catch (err) {
+              end(err.error || 500, {
+                error   : res.statusCode,
+                message : err.toString()
+              });
             }
-            json = Config.jobsByName[name](req, res);
-            if (json) {
-              res.statusCode = 200;
-              res.setHeader("Content-Type", "application/json; character=utf-8");
-              res.end(JSON.stringify(json));
-            }
-            // if not, assuming that the callback will process the response manually             
-          } catch (err) {
-            res.statusCode = err.error || 500;
-            res.setHeader("Content-Type", "application/json; character=utf-8");
-            res.end(JSON.stringify({
-              error   : res.statusCode,
-              message : err.toString()
-            }));
-          }
-        }).run();
+          }).run();
+          
+        }
       }
     });
   
