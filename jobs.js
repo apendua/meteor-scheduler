@@ -24,8 +24,7 @@
       next();
     })
     .use(function (req, res, next) {
-      
-      var match = Config.jobsRegExp.exec(req.url);
+      var match = Config.jobsRegExp.exec(req._parsedUrl.path);
       var name = "";
       
       function end(code, data) {
@@ -40,21 +39,18 @@
       if (!match) {
         next();
       } else {
-        // TODO: use bindEnvironment instead
         name = match[1];
-        
         if (name === undefined) {
-          
           end(200, _.map(_.keys(Config.jobsByName), function (name) {
             return Meteor.absoluteUrl(Config.options.jobsPrefix + '/' + name);
           }));
-          
         } else {
-      
+          name = name.substr(1);
+          // TODO: use bindEnvironment instead of Fiber
           Fiber(function () {
             var json = null;
             try {
-              if (!_.isFunction(Config.jobsByName[name] === undefined)) {
+              if (!_.isFunction(Config.jobsByName[name])) {
                 throw new Meteor.Error(404, 'Job not found.');
               }
               json = Config.jobsByName[name](req, res);
@@ -64,7 +60,7 @@
               }
             } catch (err) {
               end(err.error || 500, {
-                error   : res.statusCode,
+                error   : err.error || 500,
                 message : err.toString()
               });
             }

@@ -30,7 +30,7 @@ Config = {};
 
   Scheduler.configure = function (options) {
     _.extend(Config.options, options);
-    Config.jobsRegExp = new RegExp(Config.options.jobsPrefix + '(\/\\w+)?');
+    Config.jobsRegExp = new RegExp('^\/' + Config.options.jobsPrefix + '(\/\\w+)?');
   };
   
   // set the default options
