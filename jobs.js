@@ -36,6 +36,9 @@
         Fiber(function () {
           var json = {};
           try {
+            if (!_.isFunction(Config.jobsByName[name] === undefined)) {
+              throw new Meteor.Error(404, 'Job not found.');
+            }
             json = Config.jobsByName[name](req, res);
             if (json) {
               res.statusCode = 200;

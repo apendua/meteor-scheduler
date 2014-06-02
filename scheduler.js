@@ -18,40 +18,49 @@ Config = {};
       return encodeURIComponent(options[attrName.substr(1)]);
     });
   }
+  
+  function wrap(callback) {
+    return function (err, res) {
+      if (res !== undefined) {
+        res = res.data;
+      }
+      callback(err, res);
+    };
+  }
 
   Scheduler.configure = function (options) {
     _.extend(Config.options, options);
-    Config.jobsRegExp = new RegExp(Config.options.jobsPrefix + '(\\w+)');
+    Config.jobsRegExp = new RegExp(Config.options.jobsPrefix + '/(\\w+)');
   };
   
   // set the default options
   Scheduler.configure({
-    schedulerUrl : Meteor.absoluteUrl('/v1'),
-    jobsPrefix   : '/jobs/'
+    schedulerUrl : Meteor.absoluteUrl('v1'),
+    jobsPrefix   : 'jobs'
   });
   
   Scheduler.job = function (name, callback) {
     // TODO: error when a job already exists
     Config.jobsByName[name] = callback;
   };
-
+  
   Scheduler.addEvent = function (name, when, data, callback) {
     HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
       url        : getJobUrl(name),
       dateOrCron : when
-    }), { data: data }, callback);
+    }), { data: data }, wrap(callback));
   };
 
   Scheduler.getEvent = function (eventId, callback) {
     HTTP.get(getApiUrl('/events/:id', {
       id : eventId
-    }), callback);
+    }), wrap(callback));
   };
   
   Scheduler.cancelEvent = function (eventId, callback) {
     HTTP.del(getApiUrl('/events/:id', {
       id : eventId
-    }), callback);
+    }), wrap(callback));
   };
   
   Scheduler.updateEvent = function (eventId, when, data, callback) {
@@ -59,30 +68,37 @@ Config = {};
     
     HTTP.put(getApiUrl('/events/:id', {
       id : eventId
-    }), { data : updates }, callback);
+    }), { data : updates }, wrap(callback));
 
   };
   
   Scheduler.listAllEvents = function (callback) {
-    HTTP.get(getApiUrl('/events'), callback);
+    HTTP.get(getApiUrl('/events'), wrap(callback));
   };
   
-  Meteor.methods({
-    addEvent: function (name, when, data) {
+  function proxy(method) {
+    return function () {
       var future = new Future();
-      
+      var args   = _.toArray(arguments);
       this.unblock();
-      
-      Scheduler.addEvent(name, when, data, function (err, res) {
+      args.push(function (err, res) {
         if (err) {
           throw err;
         } else {
           future['return'](res);
         }
       });
-      
+      method.apply(this, args);
       return future.wait();
-    }
+    };
+  }
+
+  var methods = {};
+
+  _.each(['addEvent', 'getEvent', 'cancelEvent', 'updateEvent', 'listAllEvents'], function (name) {
+    methods['scheduler/' + name] = proxy(Scheduler[name]);
   });
+
+  Meteor.methods(methods);
   
 }(Scheduler, Config));
