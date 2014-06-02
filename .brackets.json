@@ -1,9 +1,17 @@
 {
   "jslint.options": {
+    "vars": true,
+    "nomen": true,
+    "devel": true,
     "predef": [
       "Meteor",
       "Package",
-      "Scheduler"
+      "HTTP",
+      "_",
+      "WebApp",
+      "Npm",
+      "Scheduler",
+      "Config"
     ]
   }
 }
