@@ -1,12 +1,13 @@
-(function () {
+Scheduler = {};
+Config = {};
+
+(function (Scheduler, Config) {
   "use strict";
   
-  Config = {};
+  var Future = Npm.require('fibers/future');
   
   Config.jobsByName = {};
   Config.options = {};
-  
-  Scheduler = {};
   
   function getJobUrl(name) {
     return Meteor.absoluteUrl(Config.options.jobsPrefix + '/' + name);
@@ -66,4 +67,22 @@
     HTTP.get(getApiUrl('/events'), callback);
   };
   
-}());
+  Meteor.methods({
+    addEvent: function (name, when, data) {
+      var future = new Future();
+      
+      this.unblock();
+      
+      Scheduler.addEvent(name, when, data, function (err, res) {
+        if (err) {
+          throw err;
+        } else {
+          future['return'](res);
+        }
+      });
+      
+      return future.wait();
+    }
+  });
+  
+}(Scheduler, Config));

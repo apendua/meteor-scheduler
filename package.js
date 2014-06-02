@@ -6,13 +6,17 @@
   });
 
   Package.on_use(function (api) {
-    api.use("underscore", "http", "webapp");
+    api.use(["underscore", "http", "webapp"]);
     
     // TODO: add support for client
     api.add_files([
-      'jobs.js',
-      'scheduler.js'
-    ], ['server']);
+      'scheduler-client.js'
+    ], 'client');
+    
+    api.add_files([
+      'scheduler.js',
+      'jobs.js'
+    ], 'server');
 
     if (api.export !== undefined) {
       api.export('Scheduler');
