@@ -6,7 +6,8 @@
   });
 
   Package.on_use(function (api) {
-    api.use(["underscore", "http", "webapp"]);
+    api.use(['underscore', 'http', 'webapp']);
+    Npm.depends({connect: '2.9.0'});
     
     api.add_files([
       'scheduler-client.js'

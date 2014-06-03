@@ -1,6 +1,7 @@
 (function () {
   "use strict";
 
+  var connect = Npm.require('connect');
   var Fiber = Npm.require('fibers');
   var connectHandlers = WebApp.connectHandlers;
 
@@ -15,14 +16,11 @@
   };
 
   // TODO: create an API package
+  // TODO: add basic authentication
   
   connectHandlers
-    .use(function (req, res, next) {
-      if (req.url === "/events") {
-        console.log(req.headers);
-      }
-      next();
-    })
+    .use(connect.query())
+    .use(connect.bodyParser())
     .use(function (req, res, next) {
       var match = Config.jobsRegExp.exec(req._parsedUrl.path);
       var name = "";
