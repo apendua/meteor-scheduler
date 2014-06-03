@@ -5,6 +5,7 @@ var exec = require('exec');
 var commander = require('commander');
 var path = require('path');
 var _ = require('underscore');
+var scheduler = require('./lib/scheduler');
 
 var options = commander
   .usage('[options]')
@@ -31,6 +32,9 @@ function runLaika(options) {
   // before running an istance of mongodb must be spawned locally
   // listening on the default port
 
+  var server = scheduler(4000);
+  process.env.SCHEDULER_URL = 'http://localhost:4000/v1';
+  
   options.files = options.files || './tests/specs';
 
   laika = require('./node_modules/laika/bin/_laika');

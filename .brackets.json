@@ -4,6 +4,8 @@
     "nomen": true,
     "devel": true,
     "predef": [
+      "require",
+      "module",
       "Meteor",
       "Package",
       "HTTP",

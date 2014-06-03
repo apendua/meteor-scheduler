@@ -2,9 +2,12 @@
   "name": "meteor-scheduler",
   "version": "0.1.0",
   "devDependencies": {
+    "later": "1.*",
+    "moment": "2.*",
     "exec": "0.1.*",
     "commander": "2.0.*",
     "underscore": "1.*",
+    "connect": "2.9.*",
     "chai": "1.*",
     "laika": "apendua/laika#devel",
     "es6-promise": "1.*"
