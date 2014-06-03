@@ -8,5 +8,6 @@ before_install:
   - npm install -g meteorite
 before_script:
   - cd example/tests && npm install
+  - cd ../..
 script:
   - cd example && ./test

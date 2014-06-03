@@ -27,7 +27,6 @@ Config = {};
   
   function wrap(callback) {
     return function (err, res) {
-      console.log(err, res);
       if (res) {
         res = res.data;
       }
@@ -68,7 +67,7 @@ Config = {};
   };
 
   Scheduler.ping = function (callback) {
-    HTTP.get(getApiUrl('/testing'), wrap(callback));
+    HTTP.get(getApiUrl('/test'), wrap(callback));
   };
 
   Scheduler.checkAuth = function (callback) {
@@ -110,14 +109,14 @@ Config = {};
   function proxy(method) {
     return function () {
       if (!Scheduler.validate(this.userId, _.toArray(arguments))) {
-        throw new Meteor.Error(403, 'Acess denied.');
+        throw new Meteor.Error(403, 'Access denied.');
       }
       var future = new Future();
       var args   = _.toArray(arguments);
       this.unblock();
       args.push(function (err, res) {
         if (err) {
-          throw err;
+          future['throw'](new Meteor.Error(res.error, res.message));
         } else {
           future['return'](res);
         }
