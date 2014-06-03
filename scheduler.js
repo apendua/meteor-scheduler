@@ -1,6 +1,8 @@
 Scheduler = {};
 Config = {};
 
+// TODO: implement promises
+
 (function (Scheduler, Config) {
   "use strict";
   
@@ -25,20 +27,24 @@ Config = {};
   
   function wrap(callback) {
     return function (err, res) {
-      if (res !== undefined) {
+      console.log(err, res);
+      if (res) {
         res = res.data;
       }
-      callback(err, res);
+      if (_.isFunction(callback)) {
+        callback(err, res);
+      }
     };
   }
   
   Scheduler.allow = function (validator) {
-    // TODO: throw an erro if not
+    // TODO: throw an error if validatro is not a function
     if (_.isFunction(validator)) {
       Config.validators.allow.push(validator);
     }
   };
   
+  // TODO: check the existance of insecure package
   Scheduler.validate = function (userId, args) {
     return _.some(Config.validators.allow, function (validator) {
       return validator.apply(null, [userId].concat(args));
@@ -59,6 +65,14 @@ Config = {};
   Scheduler.job = function (name, callback) {
     // TODO: error when a job already exists
     Config.jobsByName[name] = callback;
+  };
+
+  Scheduler.ping = function (callback) {
+    HTTP.get(getApiUrl('/testing'), wrap(callback));
+  };
+
+  Scheduler.checkAuth = function (callback) {
+    HTTP.post(getApiUrl('/auth'), wrap(callback));
   };
   
   Scheduler.addEvent = function (name, when, data, callback) {
@@ -115,7 +129,7 @@ Config = {};
 
   var methods = {};
 
-  _.each(['addEvent', 'getEvent', 'cancelEvent', 'updateEvent', 'listAllEvents'], function (name) {
+  _.each(['ping', 'checkAuth', 'addEvent', 'getEvent', 'cancelEvent', 'updateEvent', 'listAllEvents'], function (name) {
     methods['scheduler/' + name] = proxy(Scheduler[name]);
   });
 

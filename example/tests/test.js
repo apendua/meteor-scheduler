@@ -10,12 +10,9 @@ var scheduler = require('./lib/scheduler');
 var options = commander
   .usage('[options]')
   .option('-v, --verbose', 'show more logs')
-  .option('-t, --timeout <ms>', 'test-case timeout in milliseconds [default: 20000]', 20000)
+  .option('-t, --timeout <ms>', 'test-case timeout in milliseconds [default: 10000]', 10000)
   .option('-f, --files <relpath>', 'where the tests are [default: ./tests/specs]', '')
   .parse(process.argv);
-
-// TODO: it would be nice if we could specify a directory as an argument
-//       to the --files option for both karma and mocha
 
 // XXX this needs to be in the global context so that
 //     the mocha's "it" and "test" could be overwritten by laika

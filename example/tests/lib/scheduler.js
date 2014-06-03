@@ -9,19 +9,39 @@ var app = connect()
   .use(connect.urlencoded())
   .use(connect.json())
   .use(function (req, res, next) {
-    next();
+    // match corresponding api
+    console.log(req._parsedUrl.path);
+    _.some(api, function (options) {
+      var match = options.regExp.exec(req._parsedUrl.path);
+      if (match) {
+        if (!options.methods || options.methods.indexOf(req.method) >= 0) {
+          req.api = options;
+          return true;
+        }
+      }
+    });
+    if (!req.api) {
+      end(res, 400, { error: 400, message: "Not implemented." });
+    } else {
+      next();
+    }
   })
   .use(function (req, res, next) {
     // authorization
     next();
   })
   .use(function(req, res, next){
-    console.log(req._parsedUrl.path);
-    res.end('hello world\n');
+    if (_.isFunction(req.api.action)) {
+      req.api.action(req, res);
+    } else {
+      end(res, 200, []);
+    }
   });
 
 module.exports = function (port) {
-  return http.createServer(app).listen(port);
+  var server = http.createServer(app).listen(port);
+  console.log('Scheduler listening on port: ', port);
+  return server;
 };
 
 function end(res, code, data) {
@@ -29,6 +49,14 @@ function end(res, code, data) {
   res.setHeader("Content-Type", "application/json; character=utf-8");
   res.end(JSON.stringify(data));
 }
+
+var api = {
+  test: {
+    regExp    : /^\/v1\/test$/,
+    methods   : ['GET'],
+    authorize : false
+  }
+};
 
 function requireCredentials(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="Scheduler"');
