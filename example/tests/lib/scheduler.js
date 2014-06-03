@@ -10,7 +10,6 @@ var app = connect()
   .use(connect.json())
   .use(function (req, res, next) {
     // match corresponding api
-    console.log(req._parsedUrl.path);
     _.some(api, function (options) {
       var match = options.regExp.exec(req._parsedUrl.path);
       if (match) {
@@ -27,8 +26,23 @@ var app = connect()
     }
   })
   .use(function (req, res, next) {
-    // authorization
-    next();
+    var auth = req.headers.authorization;
+    var match;
+    if (!auth) {
+      requireCredentials(res);
+    } else {
+      match = /Basic\s+([\w\d]+)/.exec(auth);
+      if (!match) {
+        requireCredentials(res);
+      } else {
+        auth = (new Buffer(match[1], 'base64')).toString().split(':');
+        //if (Meteor.users.find({ appKey: auth[0], appSecret: auth[1] }).count() == 0) {
+        //  end(this, 403, { error: 403, message: 'Access denied.' });
+        //}
+        console.log(auth);
+        next();
+      }
+    }
   })
   .use(function(req, res, next){
     if (_.isFunction(req.api.action)) {
@@ -50,19 +64,26 @@ function end(res, code, data) {
   res.end(JSON.stringify(data));
 }
 
-var api = {
-  test: {
-    regExp    : /^\/v1\/test$/,
-    methods   : ['GET'],
-    authorize : false
-  }
-};
-
 function requireCredentials(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="Scheduler"');
   res.statusCode = 401;
   res.end();
 }
+
+var api = {
+  test: {
+    regExp    : /^\/v1\/test$/,
+    methods   : ['GET'],
+    authorize : false
+  },
+  
+  auth: {
+    regExp    : /^\/v1\/auth$/,
+    methods   : ['GET', 'POST'],
+    authorize : true
+  },
+  
+};
   
 function badRequest(res) {
   end(res, 400, {});
@@ -89,21 +110,7 @@ function getNextTick(cron) {
   
 function authorize(callback) {
   return function () {
-    var auth = this.request.headers.authorization;
-    var match;
-    if (!auth) {
-      requireCredentials(this);
-    } else {
-      match = /Basic\s+([\w\d]+)/.exec(auth);
-      if (!match) {
-        requireCredentials(this);
-      } else {
-        auth = (new Buffer(match[1], 'base64')).toString().split(':');
-        if (Meteor.users.find({ appKey: auth[0], appSecret: auth[1] }).count() == 0) {
-          end(this, 403, { error: 403, message: 'Access denied.' });
-        }
-      }
-    }
+   
   };
 }
 

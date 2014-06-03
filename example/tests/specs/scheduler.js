@@ -52,10 +52,27 @@ describe('Scheduler.', function () {
           expect(err.toString()).to.contain('403');
         })
         .always(done);        
-    });  
+    });
   });
   
   describe('Given an authorized access,', function () {
+  
+    it('should not be able to pass the authentication test.', function (done) {    
+      promise(client)
+        .evalAsync(function () {
+          Scheduler.checkAuth(function (err, res) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(res);
+            }
+          });
+        })
+        .then(function (res) {
+          expect(res).to.be.ok;
+        })
+        .always(done);        
+    });
     
     it('should be able to trigger an existing job.', function (done) {
       // TODO: test the time difference

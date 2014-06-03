@@ -71,7 +71,9 @@ Config = {};
   };
 
   Scheduler.checkAuth = function (callback) {
-    HTTP.post(getApiUrl('/auth'), wrap(callback));
+    HTTP.post(getApiUrl('/auth'), {
+      auth: "user:password"
+    }, wrap(callback));
   };
   
   Scheduler.addEvent = function (name, when, data, callback) {
@@ -116,7 +118,11 @@ Config = {};
       this.unblock();
       args.push(function (err, res) {
         if (err) {
-          future['throw'](new Meteor.Error(res.error, res.message));
+          if (res) {
+            future['throw'](new Meteor.Error(res.error, res.message));
+          } else {
+            future['throw'](new Meteor.Error(err.response.statusCode, err.toString()));
+          }
         } else {
           future['return'](res);
         }
