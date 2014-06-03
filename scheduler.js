@@ -8,6 +8,10 @@ Config = {};
   
   Config.jobsByName = {};
   Config.options = {};
+  Config.validators = {
+    allow : [],
+    deny  : []
+  };
   
   function getJobUrl(name) {
     return Meteor.absoluteUrl(Config.options.jobsPrefix + '/' + name);
@@ -27,7 +31,20 @@ Config = {};
       callback(err, res);
     };
   }
-
+  
+  Scheduler.allow = function (validator) {
+    // TODO: throw an erro if not
+    if (_.isFunction(validator)) {
+      Config.validators.allow.push(validator);
+    }
+  };
+  
+  Scheduler.validate = function (userId, args) {
+    return _.some(Config.validators.allow, function (validator) {
+      return validator.apply(null, [userId].concat(args));
+    });
+  };
+  
   Scheduler.configure = function (options) {
     _.extend(Config.options, options);
     Config.jobsRegExp = new RegExp('^\/' + Config.options.jobsPrefix + '(\/\\w+)?');
@@ -78,6 +95,9 @@ Config = {};
   
   function proxy(method) {
     return function () {
+      if (!Scheduler.validate(this.userId, _.toArray(arguments))) {
+        throw new Meteor.Error(403, 'Acess denied.');
+      }
       var future = new Future();
       var args   = _.toArray(arguments);
       this.unblock();
