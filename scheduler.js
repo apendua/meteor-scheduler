@@ -26,14 +26,14 @@ Config = {};
   }
   
   function wrap(callback) {
-    return function (err, res) {
-      if (res) {
-        res = res.data;
-      }
-      if (_.isFunction(callback)) {
+    if (callback) {
+      return function (err, res) {
+        if (res) {
+          res = res.data;
+        }
         callback(err, res);
-      }
-    };
+      };
+    }
   }
   
   Scheduler.allow = function (validator) {
@@ -50,9 +50,17 @@ Config = {};
     });
   };
   
+  // TODO: allow defining the auth string explicitlly
   Scheduler.configure = function (options) {
     _.extend(Config.options, options);
     Config.jobsRegExp = new RegExp('^\/' + Config.options.jobsPrefix + '(\/\\w+)?');
+    //------------------------------------------------------------------------------
+    if (_.has(options, 'schedulerUrl') && !_.has(options, 'auth')) {
+      var match = /\/\/(\w+:\w+)@/.exec(Config.options.schedulerUrl);
+      if (match) {
+        Config.auth = match[1];
+      }
+    }
   };
   
   // set the default options
@@ -67,48 +75,55 @@ Config = {};
   };
 
   Scheduler.ping = function (callback) {
-    HTTP.get(getApiUrl('/test'), wrap(callback));
+    return HTTP.get(getApiUrl('/test'), wrap(callback));
   };
 
   Scheduler.checkAuth = function (callback) {
-    HTTP.post(getApiUrl('/auth'), {
-      auth: "user:password"
+    return HTTP.post(getApiUrl('/auth'), {
+      auth : Config.auth
     }, wrap(callback));
   };
   
   Scheduler.addEvent = function (name, when, data, callback) {
-    HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
+    return HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
+      auth       : Config.auth,
       url        : getJobUrl(name),
       dateOrCron : when
     }), { data: data }, wrap(callback));
   };
 
   Scheduler.getEvent = function (eventId, callback) {
-    HTTP.get(getApiUrl('/events/:id', {
-      id : eventId
+    return HTTP.get(getApiUrl('/events/:id', {
+      auth : Config.auth,
+      id   : eventId
     }), wrap(callback));
   };
   
   Scheduler.cancelEvent = function (eventId, callback) {
-    HTTP.del(getApiUrl('/events/:id', {
-      id : eventId
+    return HTTP.del(getApiUrl('/events/:id', {
+      auth : Config.auth,
+      id   : eventId
     }), wrap(callback));
   };
   
   Scheduler.updateEvent = function (eventId, when, data, callback) {
     var updates = {};
     
-    HTTP.put(getApiUrl('/events/:id', {
-      id : eventId
+    return HTTP.put(getApiUrl('/events/:id', {
+      auth : Config.auth,
+      id   : eventId
     }), { data : updates }, wrap(callback));
 
   };
   
   Scheduler.listAllEvents = function (callback) {
-    HTTP.get(getApiUrl('/events'), wrap(callback));
+    return HTTP.get(getApiUrl('/events'), {
+      auth : Config.auth
+    }, wrap(callback));
   };
   
   function proxy(method) {
+    // TODO: try to implement this without future
     return function () {
       if (!Scheduler.validate(this.userId, _.toArray(arguments))) {
         throw new Meteor.Error(403, 'Access denied.');

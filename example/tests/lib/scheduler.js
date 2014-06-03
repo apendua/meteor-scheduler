@@ -26,21 +26,25 @@ var app = connect()
     }
   })
   .use(function (req, res, next) {
-    var auth = req.headers.authorization;
-    var match;
-    if (!auth) {
-      requireCredentials(res);
+    if (!req.api.authorize) {
+      next();
     } else {
-      match = /Basic\s+([\w\d]+)/.exec(auth);
-      if (!match) {
+      var auth = req.headers.authorization;
+      var match;
+      if (!auth) {
         requireCredentials(res);
       } else {
-        auth = (new Buffer(match[1], 'base64')).toString().split(':');
-        //if (Meteor.users.find({ appKey: auth[0], appSecret: auth[1] }).count() == 0) {
-        //  end(this, 403, { error: 403, message: 'Access denied.' });
-        //}
-        console.log(auth);
-        next();
+        match = /Basic\s+([\w\d]+)/.exec(auth);
+        if (!match) {
+          requireCredentials(res);
+        } else {
+          auth = (new Buffer(match[1], 'base64')).toString().split(':');
+          //if (Meteor.users.find({ appKey: auth[0], appSecret: auth[1] }).count() == 0) {
+          //  end(this, 403, { error: 403, message: 'Access denied.' });
+          //}
+          console.log(auth);
+          next();
+        }
       }
     }
   })
