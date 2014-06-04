@@ -10,6 +10,7 @@
     "connect": "2.9.*",
     "chai": "1.*",
     "laika": "apendua/laika#devel",
+    "priorityqueuejs": "0.2.*",
     "es6-promise": "1.*"
   }
 }

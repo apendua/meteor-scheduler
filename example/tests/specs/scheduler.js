@@ -49,7 +49,7 @@ describe('Scheduler.', function () {
         .then(function () {
           throw new Error('Error was not thrown.');
         }, function (err) {
-          expect(err.toString()).to.contain('403');
+          expect(err.toString()).to.contain('40'); // it may be either 401 or 403
         })
         .always(done);        
     });
@@ -57,6 +57,16 @@ describe('Scheduler.', function () {
   
   describe('Given an authorized access,', function () {
   
+    before(function (done) {
+      promise(server)
+        .eval(function () {
+          Scheduler.configure({
+            auth: 'user:password'
+          });
+        })
+        .always(done);
+    });
+    
     it('should not be able to pass the authentication test.', function (done) {    
       promise(client)
         .evalAsync(function () {

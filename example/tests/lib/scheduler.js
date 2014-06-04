@@ -3,122 +3,150 @@ var http = require('http');
 var later = require('later');
 var moment = require('moment');
 var _ = require('underscore');
+var middleware = require('./middleware');
+var crypto = require('crypto');
+var PriorityQueue = require('priorityqueuejs');
+var urlTools = require('url');
 
-var app = connect()
-  .use(connect.query())
-  .use(connect.urlencoded())
-  .use(connect.json())
-  .use(function (req, res, next) {
-    // match corresponding api
-    _.some(api, function (options) {
-      var match = options.regExp.exec(req._parsedUrl.path);
-      if (match) {
-        if (!options.methods || options.methods.indexOf(req.method) >= 0) {
-          req.api = options;
-          return true;
-        }
-      }
-    });
-    if (!req.api) {
-      end(res, 400, { error: 400, message: "Not implemented." });
-    } else {
-      next();
+// API IMPLEMENTATION
+
+function post(url, data, callback) {
+  "use strict";
+  var done = false;
+  var postData = data !== undefined ? JSON.stringify(data) : '';
+  var options = urlTools.parse(url);
+  var request = http.request(_.extend(options, {
+    method  : 'POST',
+    headers : {
+      'Content-Type'   : 'application/x-www-form-urlencoded',
+      'Content-Length' : postData.length
     }
-  })
-  .use(function (req, res, next) {
-    if (!req.api.authorize) {
-      next();
-    } else {
-      var auth = req.headers.authorization;
-      var match;
-      if (!auth) {
-        requireCredentials(res);
-      } else {
-        match = /Basic\s+([\w\d]+)/.exec(auth);
-        if (!match) {
-          requireCredentials(res);
-        } else {
-          auth = (new Buffer(match[1], 'base64')).toString().split(':');
-          //if (Meteor.users.find({ appKey: auth[0], appSecret: auth[1] }).count() == 0) {
-          //  end(this, 403, { error: 403, message: 'Access denied.' });
-          //}
-          console.log(auth);
-          next();
-        }
-      }
-    }
-  })
-  .use(function(req, res, next){
-    if (_.isFunction(req.api.action)) {
-      req.api.action(req, res);
-    } else {
-      end(res, 200, []);
-    }
+  }), function () {
+    done = true;
+    callback.apply(this, arguments);
+  });
+  request.write(postData);
+  request.end();
+  return request;
+}
+
+var Scheduler = function () {
+  "use strict";
+  var interval = 5 * 1000;
+  var self = this;
+  
+  // in memory database
+  var eventsById  = {};
+  var eventsQueue = new PriorityQueue(function (e1, e2) {
+    return e2.next.getTime() - e1.next.getTime();
   });
 
-module.exports = function (port) {
-  var server = http.createServer(app).listen(port);
-  console.log('Scheduler listening on port: ', port);
-  return server;
-};
-
-function end(res, code, data) {
-  res.statusCode = code;
-  res.setHeader("Content-Type", "application/json; character=utf-8");
-  res.end(JSON.stringify(data));
-}
-
-function requireCredentials(res) {
-  res.setHeader('WWW-Authenticate', 'Basic realm="Scheduler"');
-  res.statusCode = 401;
-  res.end();
-}
-
-var api = {
-  test: {
-    regExp    : /^\/v1\/test$/,
-    methods   : ['GET'],
-    authorize : false
-  },
+  self.addEvent = function (event) {
+    //TODO: also handle cron jobs
+    event.id      = crypto.randomBytes(8).toString('hex');
+    event.inQueue = { id: event.id, next: event.when };
+    eventsQueue.enq(event.inQueue);
+    eventsById[event.id] = event;
+    //-------------------------------
+    // TODO: only tick a single event
+    if (event.when - moment.valueOf() < interval) {
+      self.tick();
+    }
+    //-----------
+    return event;
+  };
   
-  auth: {
-    regExp    : /^\/v1\/auth$/,
-    methods   : ['GET', 'POST'],
-    authorize : true
-  },
-  
-};
-  
-function badRequest(res) {
-  end(res, 400, {});
-}
-  
-function verifyMethod(method, callback) {
-  return function (req, res) {
-    if (req.method === method.toUpperCase()) {
-      callback.apply(null, arguments);
-    } else {
-      badRequest(res);
+  self.tick = function () {
+    var limit = moment().add('milliseconds', interval).toDate();
+    var queue = null;
+    
+    while (eventsQueue.size() && eventsQueue.peek().next < limit) {
+      queue = eventsQueue.deq();
+      if (!queue.skip) {
+        setTimeout(function () {
+          var event = eventsById[queue.id];
+          if (event && !queue.skip) {
+            post(event.url, event.data, function (res) {
+              console.log('GOT RESPONSE', res.statusCode);
+              /*if (job.cron) {
+                Jobs.update(job._id, { $set: {
+                  when: later.schedule(later.parse.cron(job.cron)).next()
+                }});
+              } else {
+                Jobs.update(job._id, { $set: {
+                  status: res.statusCode
+                }});
+              }
+              if (err) {
+                // TODO: decrease the retries number
+                console.log('JOB FAILDED:', job.url);
+              }*/
+            }).on('error', function (err) {
+              //TODO: decide what we want to do with this
+              //console.log('GOT AN ERROR', err);
+            });
+          }
+        }, moment(queue.next).valueOf() - moment().valueOf());
+      }
     }
   };
-}
+  
+  self.api = function () {
+    return [
+      {
+        regExp    : /^\/test$/,
+        methods   : ['GET'],
+        authorize : false
+      },
 
-function getNextTick(cron) {
+      {
+        regExp    : /^\/auth$/,
+        methods   : ['GET', 'POST'],
+        authorize : true
+      },
+
+      {
+        regExp    : /^\/events\/when\/([^\/]+)\/([^\/]+)/,
+        methods   : ['POST'],
+        authorize : false,
+        action    : function (req, res) {
+          if (req.method === 'POST') {
+            return self.addEvent({
+              when : moment(this.params[0]).toDate(),
+              url  : this.params[1]
+            });
+          }
+        }
+      }
+    ];
+  };
+  
+  var handle = null;
+  
+  self.start = function () {
+    (function tick() {
+      self.tick();
+      handle = setTimeout(tick,  interval);
+    }());    
+  }
+  
+  self.stop = function () {
+    handle && clearTimeout(handle);
+  };
+  
+};
+
+
+/*function getNextTick(cron) {
   //XXX I don't like this
+  "use strict";
   var s = later.parse.cron(cron);
   var t = later.schedule(s).next();
   if (!isNaN(t.getTime())) {
     return t;
   }
 }
-  
-function authorize(callback) {
-  return function () {
-   
-  };
-}
 
-/*
 this.route('test', {
   path   : '/v1/test',
   where  : 'server',
@@ -203,3 +231,36 @@ this.route('addEvent', {
   })
 });
 */
+
+
+module.exports = function (port) {
+  "use strict";
+  
+  var scheduler = new Scheduler();
+  
+  var app = connect()
+    .use(connect.query())
+    .use(connect.urlencoded())
+    .use(connect.json())
+    .use(middleware.matchApi('/v1', scheduler.api(), { verbose: false }))
+    .use(middleware.basicAuth())
+    .use(middleware.apiCall());
+  
+  var server = http.createServer(app).listen(port);
+  var connections = [];
+  
+  console.log('=> Scheduler running at: http://localhost:' + port + '/v1');
+  
+  server.on('close', function () {
+    console.log('');
+  });
+  
+  process.on('SIGINT', function () {
+    server.close();
+    scheduler.stop();
+  });
+  
+  scheduler.start();
+  
+  return server;
+};

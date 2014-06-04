@@ -5,7 +5,9 @@
     "devel": true,
     "predef": [
       "require",
+      "exports",
       "module",
+      "Buffer",
       "Meteor",
       "Package",
       "HTTP",
