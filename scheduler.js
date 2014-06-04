@@ -128,16 +128,15 @@ Config = {};
       if (!Scheduler.validate(this.userId, _.toArray(arguments))) {
         throw new Meteor.Error(403, 'Access denied.');
       }
+      
       var future = new Future();
       var args   = _.toArray(arguments);
+      
       this.unblock();
+      
       args.push(function (err, res) {
         if (err) {
-          if (res) {
-            future['throw'](new Meteor.Error(res.error, res.message));
-          } else {
-            future['throw'](new Meteor.Error(err.response.statusCode, err.toString()));
-          }
+          future['throw'](new Meteor.Error(err.response.statusCode, (res && res.message) || 'failed'));
         } else {
           future['return'](res);
         }
