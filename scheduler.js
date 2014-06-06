@@ -89,6 +89,9 @@ Config = {};
   };
   
   Scheduler.addEvent = function (name, when, data, callback) {
+    if (arguments.length < 4) {
+      throw new Meteor.Error(400, 'Required arguments are: name, when, data.');
+    }
     return HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
       auth       : Config.options.auth,
       url        : getJobUrl(name),
@@ -97,6 +100,9 @@ Config = {};
   };
 
   Scheduler.getEvent = function (eventId, callback) {
+    if (arguments.length < 2) {
+      throw new Meteor.Error(400, 'Required arguments are: eventId.');
+    }
     return HTTP.get(getApiUrl('/events/:id', {
       auth : Config.options.auth,
       id   : eventId
@@ -104,14 +110,21 @@ Config = {};
   };
   
   Scheduler.cancelEvent = function (eventId, callback) {
+    if (arguments.length < 2) {
+      throw new Meteor.Error(400, 'Required arguments are: eventId.');
+    }
     return HTTP.del(getApiUrl('/events/:id', {
       auth : Config.options.auth,
       id   : eventId
     }), wrap(callback));
   };
   
-  Scheduler.updateEvent = function (eventId, when, data, callback) {
-    var updates = {};
+  Scheduler.updateEvent = function (eventId, updates, callback) {
+    updates = updates || {};
+
+    if (arguments.length < 3) {
+      throw new Meteor.Error(400, 'Required arguments are: eventId, updates.');
+    }
     
     return HTTP.put(getApiUrl('/events/:id', {
       auth : Config.options.auth,
