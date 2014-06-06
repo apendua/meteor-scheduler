@@ -64,6 +64,27 @@ Config = {};
       return validator.apply(null, [userId].concat(args));
     });
   };
+
+  Scheduler.isValidCron = (function () {
+    // TODO: these guys may be a little too restrictive
+    var regExes = [
+      /^(\d{1,2}|\*)(\/\d{1,2})?$/,
+      /^(\d{1,2})(\,\d{1,2})*$/,
+      /^\d{1,2}-\d{1,2}$/
+    ];
+    return function (cron) {
+      // this is only to tell the difference between iso date and cron string so the tests are realy naive
+      cron = cron.split(' ');
+      if (cron.length !== 6) {
+        return false;
+      }
+      return _.every(cron, function (field) {
+        return _.some(function (re) {
+          return re.test()
+        })
+      });
+    }
+  }());
   
   // TODO: allow defining the auth string explicitlly
   Scheduler.configure = function (options) {
@@ -107,6 +128,14 @@ Config = {};
   };
   
   Scheduler.addEvent = careAboutArguments(function (name, when, data, callback) {
+    if (!Scheduler.isValidCron(when)) {
+      when = moment(when);
+      if (!when.isValid()) {
+        throw new Meteor.Error(400, 'Wrong time format. Expecting either cron expression or iso8601 date.');
+      } else {
+        when = when.toISOString();
+      }
+    }
     return HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
       auth       : Config.options.auth,
       url        : getJobUrl(name),

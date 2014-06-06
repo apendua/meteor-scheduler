@@ -1,7 +1,7 @@
-(function () {
-  "use strict";
+Scheduler = {};
 
-  Scheduler = {};
+(function (Scheduler) {
+  "use strict";
 
   _.each(['ping', 'checkAuth', 'addEvent', 'getEvent', 'cancelEvent', 'updateEvent', 'listAllEvents'], function (name) {
     Scheduler[name] = function () {
@@ -15,4 +15,4 @@
     };
   });
   
-}());
+}(Scheduler));

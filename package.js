@@ -18,6 +18,11 @@
       'jobs.js'
     ], 'server');
 
+    // use on both client and server
+    api.add_files([
+      'helpers.js'
+    ]);
+
     if (api.export !== undefined) {
       api.export('Scheduler');
     }

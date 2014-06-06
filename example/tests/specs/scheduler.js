@@ -54,7 +54,7 @@ describe('Scheduler.', function () {
         }, function (err) {
           expect(err.toString()).to.contain('40'); // it may be either 401 or 403
         })
-        .always(done);        
+        .always(done);
     });
   });
   
@@ -101,6 +101,17 @@ describe('Scheduler.', function () {
         })
         .then(function (value) {
           expect(value).to.be.ok;
+        })
+        .always(done);
+    });
+
+    it('should throw an error when time is given in a wrong format.', function (done) {
+      promise(server)
+        .eval(function () {
+          Scheduler.addEvent('testJob', '* * * * *'); // should have 6 fields
+        })
+        .expectError(function (err) {
+          expect(err.toString()).to.contain('400');
         })
         .always(done);
     });
