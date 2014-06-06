@@ -140,7 +140,10 @@ Config = {};
       auth       : Config.options.auth,
       url        : getJobUrl(name),
       dateOrCron : when
-    }), { data: data }, wrap(callback));
+    }), {
+      auth: Config.options.auth, // how come the tests were passing without it?
+      data: data
+    }, wrap(callback));
   });
 
   Scheduler.getEvent = careAboutArguments(function (eventId, callback) {

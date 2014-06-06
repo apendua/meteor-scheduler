@@ -39,6 +39,7 @@ describe('Scheduler.', function () {
     });
 
     it('should not be able to do anything else.', function (done) {
+      // TODO: test all possible api calls
       promise(client)
         .evalAsync(function () {
           Scheduler.checkAuth(function (err, res) {
@@ -70,7 +71,7 @@ describe('Scheduler.', function () {
         .always(done);
     });
     
-    it('should not be able to pass the authentication test.', function (done) {    
+    it('should be able to pass the authentication test.', function (done) {
       promise(client)
         .evalAsync(function () {
           Scheduler.checkAuth(function (err, res) {
@@ -84,7 +85,7 @@ describe('Scheduler.', function () {
         .then(function (res) {
           expect(res).to.be.ok;
         })
-        .always(done);        
+        .always(done);
     });
     
     it('should be able to trigger an existing job.', function (done) {

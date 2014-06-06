@@ -30,6 +30,7 @@ function runLaika(options) {
   // listening on the default port
 
   var server = scheduler(4000);
+  // TODO: allow using different server for tests
   process.env.SCHEDULER_URL = 'http://localhost:4000/v1';
   
   options.files = options.files || './tests/specs';
