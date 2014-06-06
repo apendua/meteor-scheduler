@@ -139,7 +139,7 @@ Config = {};
     return HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
       auth       : Config.options.auth,
       url        : getJobUrl(name),
-      dateOrCron : moment(when).toISOString()
+      dateOrCron : when
     }), { data: data }, wrap(callback));
   });
 
