@@ -113,6 +113,7 @@ var makeBoundedPromise = function (self, constructor, connector, promise) {
           'function () {\n' +
           '  var resolve = function (res) { emit("' + res_event + '", res); };\n' +
           '  var reject  = function (err) { emit("' + err_event + '", err); };\n' +
+          '  var done    = function (err, res) { err ? reject(err) : resolve(res) };\n' +
           '  try {\n' +
           '    (' + code.toString() + '(' + args + '));\n' +
           '  } catch (err) {\n' +
@@ -127,6 +128,7 @@ var makeBoundedPromise = function (self, constructor, connector, promise) {
     }); // THEN
   }; // EVAL ASYNC
 
+  // TODO: we should rename it to "waitForEmit"
   // XXX I am not sure if we should wait for the previous promise
   self.once = function (name, callback) {
     return new constructor(connector, new Promise(function (resolve, reject) {
@@ -139,6 +141,22 @@ var makeBoundedPromise = function (self, constructor, connector, promise) {
       });
     })); // CONSTRUCTOR
   }; // ONCE
+
+  // switch to another connector after we're done with the current promise
+  self.switchTo = function (anotherConnector) {
+    // TODO: decide what we should do if we got a wrong parameter
+    if (anotherConnector.appUrl) {
+      return new ClientPromise(anotherConnector, Promise.resolve(promise));
+    }
+    return new ServerPromise(anotherConnector, Promise.resolve(promise));
+  };
+
+  // this could go to a common prototype
+  self.expectError = function (callback) {
+    return self.then(function () {
+      throw new Error('Expected an exception to be throw.')
+    }, callback);
+  };
 
 }; // makeBoundedPromise
 
@@ -155,6 +173,13 @@ ClientPromise = function (client, promise) {
 }
 
 ClientPromise.prototype = {
+
+  login: function (user, password) {
+    return this.evalAsync(function (user, password) {
+      Meteor.loginWithPassword(user, password, done);
+    }, user, password);
+  },
+
   getText: function (selector) {
     return this.eval(function (selector) {
       return $(selector).text();
