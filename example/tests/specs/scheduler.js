@@ -1,3 +1,5 @@
+/*global setup, before, describe, it, emit, eval*/
+
 var expect = require('chai').expect;
 var promise = require('../helpers').promise;
 var throttle = require('../helpers').throttle;
@@ -8,7 +10,8 @@ describe('Scheduler.', function () {
   var server, client;
   
   setup(function (_server, _client) {
-    server = _server; client = _client;
+    server = _server;
+    client = _client;
   });
   
   before(function (done) {
@@ -35,7 +38,7 @@ describe('Scheduler.', function () {
         });
     });
 
-    it('should not be able to do anything else.', function (done) {    
+    it('should not be able to do anything else.', function (done) {
       promise(client)
         .evalAsync(function () {
           Scheduler.checkAuth(function (err, res) {

@@ -15,7 +15,8 @@
       "WebApp",
       "Npm",
       "Scheduler",
-      "Config"
+      "Config",
+      "moment"
     ]
   }
 }
