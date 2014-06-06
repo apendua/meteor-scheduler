@@ -16,7 +16,6 @@
       }
       return _.every(cron, function (field) {
         return _.any(regExp, function (re) {
-          console.log('testing', re.toString(), field);
           return re.test(field);
         })
       });
