@@ -14,6 +14,18 @@ Config = {};
     allow : [],
     deny  : []
   };
+
+  function careAboutArguments(func) {
+    return function () {
+      var args = _.toArray(arguments);
+      if (typeof _.last(args) === 'function') {
+        while (args.length < func.length) {
+          args.splice(args.length - 1, 0, undefined);
+        }
+      }
+      return func.apply(this, args);
+    };
+  }
   
   function getJobUrl(name) {
     return Meteor.absoluteUrl(Config.options.jobsPrefix + '/' + name);
@@ -87,57 +99,43 @@ Config = {};
       auth : Config.options.auth
     }, wrap(callback));
   };
+
+  Scheduler.getIdsOfAllEvents = function (callback) {
+    return HTTP.get(getApiUrl('/events'), {
+      auth : Config.options.auth
+    }, wrap(callback));
+  };
   
-  Scheduler.addEvent = function (name, when, data, callback) {
-    if (arguments.length < 4) {
-      throw new Meteor.Error(400, 'Required arguments are: name, when, data.');
-    }
+  Scheduler.addEvent = careAboutArguments(function (name, when, data, callback) {
     return HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
       auth       : Config.options.auth,
       url        : getJobUrl(name),
       dateOrCron : moment(when).toISOString()
     }), { data: data }, wrap(callback));
-  };
+  });
 
-  Scheduler.getEvent = function (eventId, callback) {
-    if (arguments.length < 2) {
-      throw new Meteor.Error(400, 'Required arguments are: eventId.');
-    }
+  Scheduler.getEvent = careAboutArguments(function (eventId, callback) {
     return HTTP.get(getApiUrl('/events/:id', {
       auth : Config.options.auth,
       id   : eventId
     }), wrap(callback));
-  };
+  });
   
-  Scheduler.cancelEvent = function (eventId, callback) {
-    if (arguments.length < 2) {
-      throw new Meteor.Error(400, 'Required arguments are: eventId.');
-    }
+  Scheduler.cancelEvent = careAboutArguments(function (eventId, callback) {
     return HTTP.del(getApiUrl('/events/:id', {
       auth : Config.options.auth,
       id   : eventId
     }), wrap(callback));
-  };
+  });
   
-  Scheduler.updateEvent = function (eventId, updates, callback) {
+  Scheduler.updateEvent = careAboutArguments(function (eventId, updates, callback) {
     updates = updates || {};
-
-    if (arguments.length < 3) {
-      throw new Meteor.Error(400, 'Required arguments are: eventId, updates.');
-    }
-    
     return HTTP.put(getApiUrl('/events/:id', {
       auth : Config.options.auth,
       id   : eventId
     }), { data : updates }, wrap(callback));
 
-  };
-  
-  Scheduler.listAllEvents = function (callback) {
-    return HTTP.get(getApiUrl('/events'), {
-      auth : Config.options.auth
-    }, wrap(callback));
-  };
+  });
   
   function proxy(method) {
     // TODO: try to implement this without future
