@@ -116,15 +116,11 @@ Config = {};
   };
 
   Scheduler.checkAuth = function (callback) {
-    return HTTP.post(getApiUrl('/auth'), {
-      auth : Config.options.auth
-    }, wrap(callback));
+    return HTTP.post(getApiUrl('/auth'), { auth : Config.options.auth }, wrap(callback));
   };
 
   Scheduler.getIdsOfAllEvents = function (callback) {
-    return HTTP.get(getApiUrl('/events'), {
-      auth : Config.options.auth
-    }, wrap(callback));
+    return HTTP.get(getApiUrl('/events'), { auth : Config.options.auth }, wrap(callback));
   };
   
   Scheduler.addEvent = careAboutArguments(function (name, when, data, callback) {
@@ -137,35 +133,31 @@ Config = {};
       }
     }
     return HTTP.post(getApiUrl('/events/when/:dateOrCron/:url', {
-      auth       : Config.options.auth,
       url        : getJobUrl(name),
       dateOrCron : when
     }), {
-      auth: Config.options.auth, // how come the tests were passing without it?
+      auth: Config.options.auth, // XXX how come the tests were passing without it? (the authorize option was set to false in API def)
       data: data
     }, wrap(callback));
   });
 
   Scheduler.getEvent = careAboutArguments(function (eventId, callback) {
     return HTTP.get(getApiUrl('/events/:id', {
-      auth : Config.options.auth,
       id   : eventId
-    }), wrap(callback));
+    }), { auth: Config.options.auth }, wrap(callback));
   });
   
   Scheduler.cancelEvent = careAboutArguments(function (eventId, callback) {
     return HTTP.del(getApiUrl('/events/:id', {
-      auth : Config.options.auth,
       id   : eventId
-    }), wrap(callback));
+    }), { auth: Config.options.auth }, wrap(callback));
   });
   
   Scheduler.updateEvent = careAboutArguments(function (eventId, updates, callback) {
     updates = updates || {};
     return HTTP.put(getApiUrl('/events/:id', {
-      auth : Config.options.auth,
       id   : eventId
-    }), { data : updates }, wrap(callback));
+    }), { auth: Config.options.auth, data : updates }, wrap(callback));
 
   });
   

@@ -108,7 +108,7 @@ var Scheduler = function () {
       {
         regExp    : /^\/events\/when\/([^\/]+)\/([^\/]+)/,
         methods   : ['POST'],
-        authorize : false,
+        authorize : true,
         action    : function (req, res) {
           if (req.method === 'POST') {
             return self.addEvent({
@@ -118,7 +118,18 @@ var Scheduler = function () {
             });
           }
         }
-      }
+      },
+
+      {
+        regExp    : /^\/events\/(\w+)/,
+        methods   : ['GET'], // TODO: DELETE, PUT
+        authorize : true,
+        action    : function (req, res) {
+          if (req.method === 'GET') {
+            return eventsById[this.params[0]];
+          }
+        }
+      },
     ];
   };
   

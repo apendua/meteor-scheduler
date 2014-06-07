@@ -118,6 +118,39 @@ describe('Scheduler.', function () {
         .always(done);
     });
   });
-  
+
+  describe('Event API,', function () {
+
+    var eventData;
+
+    before(function (done) {
+      promise(server)
+        .evalAsync(function () {
+          Scheduler.addEvent('testJob', moment().add('hours', 1).toISOString(), done);
+        })
+        .then(function (result) {
+          eventData = result;
+        })
+        .always(done);
+    });
+
+    it('should be able to add a new event.', function () {
+      expect(eventData.id).to.exist;
+    });
+
+    it('should be able to fetch event config.', function (done) {
+      promise(server)
+        .evalAsync(function (eventId) {
+          Scheduler.getEvent(eventId, done);
+        }, eventData.id)
+        .then(function (result) {
+          expect(result.id).to.eql(eventData.id);
+          expect(result.url).to.eql(eventData.url);
+          expect(result.when).to.eql(eventData.when);
+        })
+        .always(done);
+    });
+
+  });
 
 });
