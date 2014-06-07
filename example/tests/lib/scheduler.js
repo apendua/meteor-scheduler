@@ -18,7 +18,7 @@ function post(url, data, callback) {
   var request = http.request(_.extend(options, {
     method  : 'POST',
     headers : {
-      'Content-Type'   : 'application/x-www-form-urlencoded',
+      'Content-Type'   : 'application/json; character=utf-8',
       'Content-Length' : postData.length
     }
   }), function () {
@@ -67,7 +67,7 @@ var Scheduler = function () {
           var event = eventsById[queue.id];
           if (event && !queue.skip) {
             post(event.url, event.data, function (res) {
-              console.log('GOT RESPONSE', res.statusCode);
+              //console.log('GOT RESPONSE', res.statusCode);
               /*if (job.cron) {
                 Jobs.update(job._id, { $set: {
                   when: later.schedule(later.parse.cron(job.cron)).next()
@@ -113,7 +113,8 @@ var Scheduler = function () {
           if (req.method === 'POST') {
             return self.addEvent({
               when : moment(this.params[0]).toDate(),
-              url  : this.params[1]
+              url  : this.params[1],
+              data : req.body
             });
           }
         }

@@ -51,11 +51,12 @@
               if (!_.isFunction(Config.jobsByName[name])) {
                 throw new Meteor.Error(404, 'Job not found.');
               }
-              json = Config.jobsByName[name](req, res);
-              if (json) {
-                // if not, we assume that the callback will process the response manually
-                end(200, json);
+              json = Config.jobsByName[name](req.body || {});
+              if (_.isString(json) || _.isNumber(json)) {
+                json = { message: json };
               }
+              // always end the request, no matter what
+              end(200, json);
             } catch (err) {
               end(err.error || 500, {
                 error   : err.error || 500,
